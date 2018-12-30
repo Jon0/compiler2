@@ -1,5 +1,5 @@
 [package]
-name = "rust-pkg"
+name = "rustpkg"
 version = "0.1.0"
 authors = ["Jon0 <Jono4728@gmail.com>"]
 

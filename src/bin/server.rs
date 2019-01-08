@@ -5,6 +5,7 @@ use std::thread;
 use std::thread::JoinHandle;
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::sync::RwLock;
 use std::path::Path;
 use std::os::unix::io::RawFd;
 
@@ -31,7 +32,7 @@ fn open_socket(path: &Path) -> RawFd {
 }
 
 
-fn init_connection_thread(accessmap: &AccessMap) -> JoinHandle<()> {
+fn init_connection_thread(accessmap: Arc<RwLock<AccessMap>>) -> JoinHandle<()> {
     let listen_epoll_fd = epoll_create().unwrap();
     let listen_fd = open_socket(Path::new("/tmp/test"));
 
@@ -46,6 +47,8 @@ fn init_connection_thread(accessmap: &AccessMap) -> JoinHandle<()> {
     		for c in 0..count {
     			let id = event[c].data();
                 println!("connect {}", id);
+				let connected_fd = accept(listen_fd).unwrap();
+				accessmap.write().unwrap().add(connected_fd);
     		}
         }
     });
@@ -56,23 +59,29 @@ fn init_connection_thread(accessmap: &AccessMap) -> JoinHandle<()> {
 /**
  * Must share the map between threads
  */
-fn reply_thread(accessmap: Arc<AccessMap>) -> JoinHandle<()> {
+fn reply_thread(accessmap: Arc<RwLock<AccessMap>>) -> JoinHandle<()> {
     let handle = thread::spawn(move || {
+
+		// a separate object prevents blocking all the time
+		let handler = accessmap.read().unwrap().getHandler();
+
         loop {
-    		accessmap.wait();
+    		let id = handler.wait();
+			accessmap.write().unwrap().trigger(id);
         }
+
     });
     return handle;
 }
 
 
 fn start_loop() {
-    let socketmap = Arc::new(AccessMap::new());
+    let mut socketmap = Arc::new(RwLock::new(AccessMap::new()));
 
     let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
-    thread_pool.push(init_connection_thread(&socketmap));
-    thread_pool.push(reply_thread(socketmap));
+    thread_pool.push(init_connection_thread(socketmap.clone()));
+    thread_pool.push(reply_thread(socketmap.clone()));
 
     for thread in thread_pool {
 	     thread.join();

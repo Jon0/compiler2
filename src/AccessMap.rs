@@ -3,14 +3,16 @@ use std::os::unix::io::RawFd;
 
 use nix::sys::epoll::*;
 
-pub struct AccessHandler {
+use SocketState::*;
+
+pub struct AccessWaiter {
     epoll_fd: RawFd
 }
 
-impl AccessHandler {
+impl AccessWaiter {
 
     pub fn new(fd: RawFd) -> Self {
-        return AccessHandler {
+        return AccessWaiter {
             epoll_fd: fd
         }
     }
@@ -30,7 +32,7 @@ impl AccessHandler {
 
 pub struct AccessMap {
     epoll_fd: RawFd,
-    map: HashMap<u64, String>,
+    map: HashMap<u64, SocketState>,
     next_id: u64,
 }
 
@@ -48,7 +50,7 @@ impl AccessMap {
     pub fn add(&mut self, fd: RawFd) {
         let id = self.next_id;
         self.next_id += 1;
-        self.map.insert(id, "todo".to_string());
+        self.map.insert(id, SocketState::new(fd));
 
         println!("add {}", fd);
         let mut event = EpollEvent::new(EpollFlags::EPOLLIN | EpollFlags::EPOLLET, id);
@@ -56,13 +58,13 @@ impl AccessMap {
     }
 
 
-    pub fn getHandler(&self) -> AccessHandler {
-        return AccessHandler::new(self.epoll_fd);
+    pub fn getWaiter(&self) -> AccessWaiter {
+        return AccessWaiter::new(self.epoll_fd);
     }
 
 
     pub fn trigger(&mut self, id: u64) {
-        println!("recv {}", id);
-        println!("mapped to {}", self.map.get(&id).unwrap())
+        let state = self.map.get(&id).unwrap();
+        println!("recv from {}: {}", id, state.try_read());
     }
 }

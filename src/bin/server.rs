@@ -19,8 +19,8 @@ use nix::sys::socket::SockProtocol;
 use nix::sys::socket::{AddressFamily, MsgFlags, SockAddr, SockType, Shutdown, InetAddr, IpAddr};
 use nix::unistd::{lseek, read, Whence};
 
-use rustpkg::ConnectionMap;
 use rustpkg::AccessMap::AccessMap;
+use rustpkg::SocketSet::*;
 
 fn open_socket(path: &Path) -> RawFd {
 	let listen_fd = socket(AddressFamily::Unix, SockType::Stream, SockFlag::empty(), None).unwrap();
@@ -32,7 +32,7 @@ fn open_socket(path: &Path) -> RawFd {
 }
 
 
-fn init_connection_thread(accessmap: Arc<RwLock<AccessMap>>) -> JoinHandle<()> {
+fn init_connection_thread(s: Arc<SocketSet>) -> JoinHandle<()> {
     let listen_epoll_fd = epoll_create().unwrap();
     let listen_fd = open_socket(Path::new("/tmp/test"));
 
@@ -48,7 +48,7 @@ fn init_connection_thread(accessmap: Arc<RwLock<AccessMap>>) -> JoinHandle<()> {
     			let id = event[c].data();
                 println!("connect {}", id);
 				let connected_fd = accept(listen_fd).unwrap();
-				accessmap.write().unwrap().add(connected_fd);
+				s.add(connected_fd);
     		}
         }
     });
@@ -59,15 +59,11 @@ fn init_connection_thread(accessmap: Arc<RwLock<AccessMap>>) -> JoinHandle<()> {
 /**
  * Must share the map between threads
  */
-fn reply_thread(accessmap: Arc<RwLock<AccessMap>>) -> JoinHandle<()> {
+fn reply_thread(s: Arc<SocketSet>) -> JoinHandle<()> {
     let handle = thread::spawn(move || {
 
-		// a separate object prevents blocking all the time
-		let handler = accessmap.read().unwrap().getHandler();
-
         loop {
-    		let id = handler.wait();
-			accessmap.write().unwrap().trigger(id);
+    		s.wait();
         }
 
     });
@@ -76,12 +72,12 @@ fn reply_thread(accessmap: Arc<RwLock<AccessMap>>) -> JoinHandle<()> {
 
 
 fn start_loop() {
-    let mut socketmap = Arc::new(RwLock::new(AccessMap::new()));
+    let sockets = Arc::new(SocketSet::new());
 
     let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 
-    thread_pool.push(init_connection_thread(socketmap.clone()));
-    thread_pool.push(reply_thread(socketmap.clone()));
+    thread_pool.push(init_connection_thread(sockets.clone()));
+    thread_pool.push(reply_thread(sockets.clone()));
 
     for thread in thread_pool {
 	     thread.join();
@@ -90,6 +86,5 @@ fn start_loop() {
 
 
 fn main() {
-    let map = Arc::new(ConnectionMap::new());
     start_loop();
 }

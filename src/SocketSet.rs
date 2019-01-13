@@ -1,37 +1,32 @@
-use std::thread;
-use std::thread::JoinHandle;
-use std::sync::Arc;
-use std::sync::Mutex;
 use std::sync::RwLock;
-use std::path::Path;
 use std::os::unix::io::RawFd;
 
 use AccessMap::*;
-
+use SocketState::*;
 
 pub struct SocketSet {
-    accessmap: RwLock<AccessMap>
+	accessmap: RwLock<AccessMap>
 }
 
 impl SocketSet {
 
-    pub fn new() -> Self {
-        return SocketSet {
-            accessmap: RwLock::new(AccessMap::new())
-        }
-    }
+	pub fn new() -> Self {
+		return SocketSet {
+			accessmap: RwLock::new(AccessMap::new())
+		}
+	}
 
-    pub fn wait(&self) {
+	pub fn wait(&self) -> SocketState {
 
 		// a separate object prevents blocking all the time
-		let handler = self.accessmap.read().unwrap().getWaiter();
-		let id = handler.wait();
+		let waiter = self.accessmap.read().unwrap().get_waiter();
+		let id = waiter.wait();
 
-		self.accessmap.write().unwrap().trigger(id);
-    }
+		return self.accessmap.write().unwrap().get_socket(id);
+	}
 
-    pub fn add(&self, fd: RawFd) {
+	pub fn add(&self, fd: RawFd) {
 		self.accessmap.write().unwrap().add(fd);
-    }
+	}
 
 }

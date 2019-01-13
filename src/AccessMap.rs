@@ -52,7 +52,7 @@ impl AccessMap {
 		self.next_id += 1;
 		self.map.insert(id, SocketState::new(fd));
 
-		println!("add {}", fd);
+		println!("Connect fd: {}", fd);
 		let mut event = EpollEvent::new(EpollFlags::EPOLLIN | EpollFlags::EPOLLET, id);
 		let _c = epoll_ctl(self.epoll_fd, EpollOp::EpollCtlAdd, fd, Some(&mut event));
 	}

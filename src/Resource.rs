@@ -49,6 +49,6 @@ impl ResourceSet {
 
 
 	pub fn debug(&self) -> String {
-		return "Ok".to_string();
+		return "Ok\n".to_string();
 	}
 }

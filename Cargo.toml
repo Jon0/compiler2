@@ -5,3 +5,4 @@ authors = ["Jon0 <Jono4728@gmail.com>"]
 
 [dependencies]
 nix = "0.12.0"
+uuid = { version = "0.7", features = ["serde", "v4"] }

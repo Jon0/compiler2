@@ -64,7 +64,7 @@ fn reply_thread(s: Arc<SocketSet>, r: Arc<ResourceSet>) -> JoinHandle<()> {
 	let handle = thread::spawn(move || {
 
 		loop {
-			let socket = s.wait();
+			let mut socket = s.wait();
 			let requests = socket.read_requests();
 			for request in requests {
 				let reply = request.apply(r.clone());
@@ -81,7 +81,7 @@ fn start_loop() {
 	let sockets = Arc::new(SocketSet::new());
 	let mut resources = Arc::new(ResourceSet::new());
 
-	Arc::make_mut(&mut resources).add(Arc::new(ConstantResource::new()));
+	Arc::make_mut(&mut resources).add(Arc::new(ConstantResource::new("Testing")));
 
 	let mut thread_pool: Vec<JoinHandle<()>> = Vec::new();
 

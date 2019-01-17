@@ -1,39 +1,44 @@
+use std::sync::Arc;
+use std::sync::RwLock;
 use std::os::unix::io::RawFd;
 
 use nix::unistd::{read, write};
 
 use Action::*;
+use MessageStream::*;
 
-
-pub struct Parser {
-
-}
-
-
-#[derive(Debug, Copy, Clone)]
+////
+/// connections are each mapped to a socket state
+/// these must be mutable for performing read write operations
+///
+#[derive(Debug, Clone)]
 pub struct SocketState {
-	fd: RawFd
-	// parser: RwLock<Parser>
+	fd: RawFd,
+	stream: Arc<MessageStream>
 }
 
 impl SocketState {
 
 	pub fn new(fd: RawFd) -> Self {
 		return SocketState {
-			fd: fd
+			fd: fd,
+			stream: Arc::new(MessageStream::new())
 		}
 	}
 
-
-	pub fn try_read(&self) -> String {
+	pub fn try_read(&mut self) {
 		let mut buf: [u8; 256] = [0; 256];
 		let result = read(self.fd, &mut buf).unwrap();
 
-		return String::from_utf8(buf[0..result].to_vec()).unwrap();
+		// todo try read again if buffer is completely used
+
+		Arc::make_mut(&mut self.stream).recv(&buf[0..result]);
 	}
 
 
-	pub fn read_requests(&self) -> Vec<Box<Request>> {
+	pub fn read_requests(&mut self) -> Vec<Box<Request>> {
+		self.try_read();
+
 		return vec![Box::new(ListRequest::new())];
 	}
 

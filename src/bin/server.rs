@@ -4,24 +4,16 @@ extern crate rustpkg;
 use std::thread;
 use std::thread::JoinHandle;
 use std::sync::Arc;
-use std::sync::Mutex;
-use std::sync::RwLock;
 use std::path::Path;
 use std::os::unix::io::RawFd;
 
-use nix::libc::off_t;
-use nix::fcntl::{open, OFlag};
 use nix::sys::epoll::*;
-use nix::sys::stat::Mode;
-use nix::sys::socket::{accept, bind, listen, recv, send, socket, shutdown};
+use nix::sys::socket::{accept, bind, listen, socket};
 use nix::sys::socket::SockFlag;
-use nix::sys::socket::SockProtocol;
-use nix::sys::socket::{AddressFamily, MsgFlags, SockAddr, SockType, Shutdown, InetAddr, IpAddr};
-use nix::unistd::{lseek, read, Whence};
+use nix::sys::socket::{AddressFamily, SockAddr, SockType};
 
-use rustpkg::AccessMap::AccessMap;
-use rustpkg::Resource::*;
-use rustpkg::SocketSet::*;
+use rustpkg::resource::*;
+use rustpkg::socket_set::*;
 
 fn open_socket(path: &Path) -> RawFd {
 	let listen_fd = socket(AddressFamily::Unix, SockType::Stream, SockFlag::empty(), None).unwrap();
@@ -78,6 +70,7 @@ fn reply_thread(s: Arc<SocketSet>, r: Arc<ResourceSet>) -> JoinHandle<()> {
 
 
 fn start_loop() {
+
 	let sockets = Arc::new(SocketSet::new());
 	let mut resources = Arc::new(ResourceSet::new());
 
@@ -89,7 +82,7 @@ fn start_loop() {
 	thread_pool.push(reply_thread(sockets.clone(), resources.clone()));
 
 	for thread in thread_pool {
-		 thread.join();
+		 let _r = thread.join().expect("failed to join thread");
 	}
 }
 

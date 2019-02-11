@@ -1,4 +1,4 @@
-use Action::*;
+use action::*;
 
 #[derive(Debug, Clone)]
 pub struct MessageStream {

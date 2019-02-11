@@ -1,8 +1,8 @@
 use std::sync::RwLock;
 use std::os::unix::io::RawFd;
 
-use AccessMap::*;
-use SocketState::*;
+use access_map::*;
+use socket_state::*;
 
 pub struct SocketSet {
 	accessmap: RwLock<AccessMap>

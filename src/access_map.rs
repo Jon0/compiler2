@@ -3,7 +3,7 @@ use std::os::unix::io::RawFd;
 
 use nix::sys::epoll::*;
 
-use SocketState::*;
+use socket_state::*;
 
 pub struct AccessWaiter {
 	epoll_fd: RawFd

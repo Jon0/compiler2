@@ -1,9 +1,9 @@
 extern crate nix;
 extern crate uuid;
 
-pub mod AccessMap;
-pub mod Action;
-pub mod MessageStream;
-pub mod Resource;
-pub mod SocketSet;
-pub mod SocketState;
+pub mod access_map;
+pub mod action;
+pub mod message_stream;
+pub mod resource;
+pub mod socket_set;
+pub mod socket_state;

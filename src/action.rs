@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use Resource::*;
+use resource::*;
 
 pub trait Request {
 	fn apply(&self, resources: Arc<ResourceSet>) -> String;

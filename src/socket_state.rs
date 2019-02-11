@@ -1,11 +1,10 @@
 use std::sync::Arc;
-use std::sync::RwLock;
 use std::os::unix::io::RawFd;
 
 use nix::unistd::{read, write};
 
-use Action::*;
-use MessageStream::*;
+use action::*;
+use message_stream::*;
 
 ////
 /// connections are each mapped to a socket state
